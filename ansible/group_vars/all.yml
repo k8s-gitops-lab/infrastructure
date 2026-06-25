@@ -1,0 +1,21 @@
+---
+kubernetes_minor_version: "1.36"
+kubernetes_version: "1.36.2"
+
+pod_subnet: "10.244.0.0/16"
+service_subnet: "10.96.0.0/12"
+kubeadm_bind_port: 6443
+
+flannel_version: "v0.28.5"
+flannel_iface: "enp0s9"
+metrics_server_version: "v0.8.1"
+
+gateway_api_version: "v1.5.1"
+
+metallb_chart_version: "0.14.9"
+metallb_addresses:
+  - "192.168.33.100-192.168.33.120"
+
+# Laisser vide pour suivre la dernière version du chart Traefik.
+# Renseigner une version exacte une fois validée dans le POC.
+traefik_chart_version: ""

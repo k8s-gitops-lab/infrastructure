@@ -1,0 +1,105 @@
+- name: Copy kubeadm config
+  ansible.builtin.template:
+    src: kubeadm-config.yaml.j2
+    dest: /tmp/kubeadm-config.yaml
+    mode: '0440'
+  tags:
+    - kubernetes-master
+    - control-plane
+    - kubeadm
+
+- name: Check if cluster already initialized
+  ansible.builtin.stat:
+    path: /etc/kubernetes/admin.conf
+  register: kubeadm_admin_conf
+  tags:
+    - kubernetes-master
+    - control-plane
+    - kubeadm
+
+- name: Reset kubeadm
+  command: /usr/bin/kubeadm reset -f
+  when: force_cluster_reset | bool
+  tags:
+    - kubernetes-master
+    - control-plane
+    - kubeadm
+    - reset
+
+- name: Init kubeadm
+  command: /usr/bin/kubeadm init --config /tmp/kubeadm-config.yaml --ignore-preflight-errors=all
+  when: not kubeadm_admin_conf.stat.exists or force_cluster_reset | bool
+  tags:
+    - kubernetes-master
+    - control-plane
+    - kubeadm
+
+- name: create folder .kube
+  ansible.builtin.file:
+    path: /root/.kube
+    state: directory
+    mode: '0755'
+  tags:
+    - kubernetes-master
+    - control-plane
+    - kubeconfig
+
+- name: Copy kubeconfig
+  ansible.builtin.copy:
+    src: /etc/kubernetes/admin.conf
+    dest: /root/.kube/config
+    remote_src: true
+    mode: '0440'
+  tags:
+    - kubernetes-master
+    - control-plane
+    - kubeconfig
+
+- name: Install CNI plugin
+  command: "kubectl apply -f https://github.com/flannel-io/flannel/releases/download/{{ flannel_version }}/kube-flannel.yml"
+  tags:
+    - kubernetes-master
+    - cni
+    - flannel
+
+- name: Force Flannel to use the Vagrant private network interface
+  command: >-
+    kubectl patch daemonset kube-flannel-ds -n kube-flannel --type=strategic -p
+    '{"spec":{"template":{"spec":{"containers":[{"name":"kube-flannel","args":["--ip-masq","--kube-subnet-mgr","--iface={{ flannel_iface }}"]}]}}}}'
+  register: flannel_iface_patch
+  changed_when: "'no change' not in flannel_iface_patch.stdout"
+  run_once: true
+  tags:
+    - kubernetes-master
+    - cni
+    - flannel
+
+- name: Install metrics-server
+  command: "kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/{{ metrics_server_version }}/components.yaml"
+  run_once: true
+  tags:
+    - kubernetes-master
+    - metrics-server
+
+# kubeadm génère des certs kubelet auto-signés que metrics-server ne
+# valide pas par défaut ; --kubelet-insecure-tls désactive cette
+# vérification (acceptable en lab, à éviter en prod).
+- name: Allow metrics-server to trust kubeadm self-signed kubelet certs
+  command: >-
+    kubectl patch deployment metrics-server -n kube-system --type=strategic -p
+    '{"spec":{"template":{"spec":{"containers":[{"name":"metrics-server","args":["--cert-dir=/tmp","--secure-port=10250","--kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname","--kubelet-use-node-status-port","--metric-resolution=15s","--kubelet-insecure-tls"]}]}}}}'
+  register: metrics_server_patch
+  changed_when: "'no change' not in metrics_server_patch.stdout"
+  run_once: true
+  tags:
+    - kubernetes-master
+    - metrics-server
+
+- name: Generate join command
+  command: kubeadm token create --print-join-command
+  register: join_command
+  run_once: true
+  tags:
+    - kubernetes-master
+    - control-plane
+    - join-command

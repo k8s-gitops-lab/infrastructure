@@ -1,0 +1,153 @@
+- name: Enable IP forwarding
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_forward
+    value: '1'
+    sysctl_set: true
+  tags:
+    - containerd
+    - runtime
+    - sysctl
+
+- name: Download containerd binary
+  ansible.builtin.get_url:
+    url: "https://github.com/containerd/containerd/releases/download/v{{ containerd_version }}/containerd-{{ containerd_version }}-linux-{{ containerd_arch }}.tar.gz"
+    dest: "/tmp/containerd-{{ containerd_version }}-linux-{{ containerd_arch }}.tar.gz"
+    checksum: "{{ containerd_checksum }}"
+    mode: '0440'
+  tags:
+    - containerd
+    - runtime
+
+- name: Extract containerd binary
+  ansible.builtin.unarchive:
+    src: "/tmp/containerd-{{ containerd_version }}-linux-{{ containerd_arch }}.tar.gz"
+    dest: /usr/local
+    remote_src: true
+    mode: '0440'
+  notify: restart containerd
+  tags:
+    - containerd
+    - runtime
+
+- name: Set permissions for containerd binary
+  ansible.builtin.file:
+    path: "{{ item }}"
+    mode: '0550'
+  loop:
+     - /usr/local/bin/containerd
+     - /usr/local/bin/containerd-shim-runc-v2
+     - /usr/local/bin/containerd-stress
+     - /usr/local/bin/ctr
+  tags:
+    - containerd
+    - runtime
+
+- name: Create systemd directory for containerd service
+  ansible.builtin.file:
+    path: /usr/local/lib/systemd/system/
+    state: directory
+    recurse: yes
+    owner: root
+    group: root
+  tags:
+    - containerd
+    - runtime
+    - systemd
+
+- name: Download containerd service file
+  ansible.builtin.get_url:
+    url: "https://raw.githubusercontent.com/containerd/containerd/v{{ containerd_version }}/containerd.service"
+    dest: /usr/local/lib/systemd/system/containerd.service
+    checksum: "{{ containerd_service_checksum }}"
+    mode: '0440'
+  notify: restart containerd
+  tags:
+    - containerd
+    - runtime
+    - systemd
+
+- name: Download crictl
+  ansible.builtin.get_url:
+    url: "https://github.com/kubernetes-sigs/cri-tools/releases/download/v{{ crictl_version }}/crictl-v{{ crictl_version }}-linux-{{ containerd_arch }}.tar.gz"
+    dest: "/tmp/crictl-v{{ crictl_version }}-linux-{{ containerd_arch }}.tar.gz"
+    checksum: "{{ crictl_checksum }}"
+    mode: '0440'
+  tags:
+    - containerd
+    - crictl
+
+- name: Extract crictl binary
+  ansible.builtin.unarchive:
+    src: "/tmp/crictl-v{{ crictl_version }}-linux-{{ containerd_arch }}.tar.gz"
+    dest: /usr/local/bin
+    remote_src: true
+    mode: '0550'
+  tags:
+    - containerd
+    - crictl
+
+- name: Download runc binary
+  ansible.builtin.get_url:
+    url: "https://github.com/opencontainers/runc/releases/download/v{{ runc_version }}/runc.{{ containerd_arch }}"
+    dest: /usr/local/sbin/runc
+    checksum: "{{ runc_checksum }}"
+    mode: '0550'
+  tags:
+    - containerd
+    - runc
+
+- name: Download CNI plugins
+  ansible.builtin.get_url:
+    url: "https://github.com/containernetworking/plugins/releases/download/v{{ cni_plugins_version }}/cni-plugins-linux-{{ containerd_arch }}-v{{ cni_plugins_version }}.tgz"
+    dest: "/tmp/cni-plugins-linux-{{ containerd_arch }}-v{{ cni_plugins_version }}.tgz"
+    checksum: "{{ cni_plugins_checksum }}"
+    mode: '0440'
+  tags:
+    - containerd
+    - cni
+
+- name: Create cni directory for containerd service
+  ansible.builtin.file:
+    path: /opt/cni/bin
+    state: directory
+    recurse: yes
+    owner: root
+    group: root
+  tags:
+    - containerd
+    - cni
+
+- name: Extract CNI plugins
+  ansible.builtin.unarchive:
+    src: "/tmp/cni-plugins-linux-{{ containerd_arch }}-v{{ cni_plugins_version }}.tgz"
+    dest: /opt/cni/bin
+    remote_src: true
+    mode: '0755'
+  tags:
+    - containerd
+    - cni
+
+- name: Create containerd configuration directory
+  ansible.builtin.file:
+    path: /etc/containerd
+    state: directory
+    recurse: yes
+    owner: root
+    group: root
+  tags:
+    - containerd
+    - runtime
+    - containerd-config
+
+- name: Copy containerd configuration file
+  ansible.builtin.copy:
+    src: files/containerd/config.toml
+    dest: /etc/containerd/config.toml
+    mode: '0440'
+  notify: restart containerd
+  tags:
+    - containerd
+    - runtime
+    - containerd-config
+
+# https://containerd.io/docs/2.3/getting-started/

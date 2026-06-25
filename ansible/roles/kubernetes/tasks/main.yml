@@ -1,0 +1,120 @@
+- name: Désactiver le swap pour la session actuelle
+  ansible.builtin.command: swapoff -a
+  when: ansible_swaptotal_mb > 0
+  tags:
+    - kubernetes
+    - kube-prereqs
+    - swap
+
+- name: Enable SELinux in enforcing mode
+  ansible.posix.selinux:
+    policy: targeted
+    state: disabled
+  tags:
+    - kubernetes
+    - kube-prereqs
+    - selinux
+
+- name: Copy Kubernetes Repo
+  ansible.builtin.template:
+    src: kubernetes.repo.j2
+    dest: /etc/yum.repos.d/kubernetes.repo
+    mode: '0440'
+  tags:
+    - kubernetes
+    - kube-prereqs
+    - packages
+
+- name: Copy modules need by k8s
+  ansible.builtin.copy:
+    src: files/modules
+    dest: /etc/modules-load.d/k8s.conf
+    mode: '0440'
+  tags:
+    - kubernetes
+    - kube-prereqs
+    - kernel
+
+- name: Load overlay module
+  community.general.modprobe:
+    name: overlay
+    state: present
+  tags:
+    - kubernetes
+    - kube-prereqs
+    - kernel
+
+- name: Load br_netfilter module
+  community.general.modprobe:
+    name: br_netfilter
+    state: present
+  tags:
+    - kubernetes
+    - kube-prereqs
+    - kernel
+
+- name: Enable IPv4 forwarding
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_forward
+    value: '1'
+    state: present
+    reload: true
+  tags:
+    - kubernetes
+    - kube-prereqs
+    - sysctl
+
+- name: Enable bridge netfilter IPv4
+  ansible.posix.sysctl:
+    name: net.bridge.bridge-nf-call-iptables
+    value: '1'
+    state: present
+    reload: true
+  tags:
+    - kubernetes
+    - kube-prereqs
+    - sysctl
+
+- name: Enable bridge netfilter IPv6
+  ansible.posix.sysctl:
+    name: net.bridge.bridge-nf-call-ip6tables
+    value: '1'
+    state: present
+    reload: true
+  tags:
+    - kubernetes
+    - kube-prereqs
+    - sysctl
+
+- name: Install kubelet, kubeadm and kubectl
+  ansible.builtin.dnf:
+    name:
+      - kubelet
+      - kubeadm
+      - kubectl
+    disable_excludes: kubernetes
+    state: latest
+  tags:
+    - kubernetes
+    - kube-prereqs
+    - packages
+
+- name: Stop service firewalld
+  ansible.builtin.service:
+    name: firewalld
+    state: stopped
+    enabled: no
+  tags:
+    - kubernetes
+    - kube-prereqs
+    - firewall
+
+- name: Start service kubelet
+  ansible.builtin.service:
+    name: kubelet
+    state: started
+    enabled: yes
+  tags:
+    - kubernetes
+    - kube-prereqs
+    - kubelet

@@ -1,0 +1,16 @@
+- name: Check if node already joined the cluster
+  ansible.builtin.stat:
+    path: /etc/kubernetes/kubelet.conf
+  register: kubelet_conf
+  tags:
+    - kubernetes-node
+    - worker
+    - join
+
+- name: Join cluster
+  command: "{{ hostvars[groups['kubernetes-master'][0]].join_command.stdout }} --ignore-preflight-errors=all"
+  when: not kubelet_conf.stat.exists
+  tags:
+    - kubernetes-node
+    - worker
+    - join

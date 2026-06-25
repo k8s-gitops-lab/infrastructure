@@ -1,0 +1,19 @@
+# kubeadm-config.yaml
+kind: ClusterConfiguration
+apiVersion: kubeadm.k8s.io/v1beta4
+kubernetesVersion: v{{ kubernetes_version }}
+networking:
+  podSubnet: {{ pod_subnet }}
+  serviceSubnet: {{ service_subnet }}
+nodeRegistration:
+  name: {{ node_name }}
+---
+kind: KubeletConfiguration
+apiVersion: kubelet.config.k8s.io/v1beta1
+cgroupDriver: systemd
+---
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: InitConfiguration
+localAPIEndpoint:
+  advertiseAddress: "{{ inventory_hostname }}"
+  bindPort: {{ kubeadm_bind_port }}

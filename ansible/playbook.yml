@@ -1,0 +1,44 @@
+- hosts: all
+  roles:
+    - role: zscaler
+      become: true
+      tags:
+        - zscaler
+        - ca
+    - role: containerd
+      become: true
+      tags:
+        - containerd
+        - runtime
+
+- hosts: kubernetes
+  roles:
+    - role: kubernetes
+      become: true
+      tags:
+        - kubernetes
+        - kube-prereqs
+
+- hosts: kubernetes-master
+  roles:
+    - role: kubernetes-master
+      become: true
+      tags:
+        - kubernetes-master
+        - control-plane
+
+- hosts: kubernetes-node
+  roles:
+    - role: kubernetes-node
+      become: true
+      tags:
+        - kubernetes-node
+        - worker
+
+- hosts: kubernetes-master
+  roles:
+    - role: kubernetes-platform
+      become: true
+      tags:
+        - kubernetes-platform
+        - platform

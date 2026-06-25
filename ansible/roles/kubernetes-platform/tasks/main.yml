@@ -1,0 +1,204 @@
+---
+- name: Create platform manifest working directory
+  ansible.builtin.file:
+    path: /tmp/kubernetes-platform
+    state: directory
+    mode: '0755'
+  tags:
+    - kubernetes-platform
+    - platform
+    - platform-render
+
+- name: Install Helm archive
+  ansible.builtin.unarchive:
+    src: "https://get.helm.sh/helm-v{{ helm_version }}-linux-{{ helm_arch }}.tar.gz"
+    dest: /tmp
+    remote_src: true
+    creates: "/tmp/linux-{{ helm_arch }}/helm"
+  tags:
+    - kubernetes-platform
+    - platform
+    - helm
+
+- name: Install Helm binary
+  ansible.builtin.copy:
+    src: "/tmp/linux-{{ helm_arch }}/helm"
+    dest: "{{ helm_binary_path }}"
+    remote_src: true
+    mode: '0755'
+  tags:
+    - kubernetes-platform
+    - platform
+    - helm
+
+- name: Install Gateway API CRDs
+  ansible.builtin.command: >-
+    kubectl apply -f
+    https://github.com/kubernetes-sigs/gateway-api/releases/download/{{ gateway_api_version }}/standard-install.yaml
+  register: gateway_api_apply
+  changed_when: "'unchanged' not in gateway_api_apply.stdout"
+  run_once: true
+  tags:
+    - kubernetes-platform
+    - platform
+    - gateway-api
+
+- name: Add MetalLB Helm repository
+  ansible.builtin.command: "{{ helm_binary_path }} repo add metallb https://metallb.github.io/metallb --force-update"
+  changed_when: false
+  run_once: true
+  tags:
+    - kubernetes-platform
+    - platform
+    - helm
+    - metallb
+
+- name: Add Traefik Helm repository
+  ansible.builtin.command: "{{ helm_binary_path }} repo add traefik https://traefik.github.io/charts --force-update"
+  changed_when: false
+  run_once: true
+  tags:
+    - kubernetes-platform
+    - platform
+    - helm
+    - traefik
+
+- name: Update Helm repositories
+  ansible.builtin.command: "{{ helm_binary_path }} repo update"
+  changed_when: false
+  run_once: true
+  tags:
+    - kubernetes-platform
+    - platform
+    - helm
+    - metallb
+    - traefik
+
+- name: Render MetalLB config
+  ansible.builtin.template:
+    src: metallb-config.yaml.j2
+    dest: /tmp/kubernetes-platform/metallb-config.yaml
+    mode: '0644'
+  tags:
+    - kubernetes-platform
+    - platform
+    - platform-render
+    - metallb
+
+- name: Render Traefik values
+  ansible.builtin.template:
+    src: traefik-values.yaml.j2
+    dest: /tmp/kubernetes-platform/traefik-values.yaml
+    mode: '0644'
+  tags:
+    - kubernetes-platform
+    - platform
+    - platform-render
+    - traefik
+
+- name: Render shared Gateway
+  ansible.builtin.template:
+    src: gateway.yaml.j2
+    dest: /tmp/kubernetes-platform/gateway.yaml
+    mode: '0644'
+  tags:
+    - kubernetes-platform
+    - platform
+    - platform-render
+    - gateway
+
+- name: Install MetalLB
+  ansible.builtin.command: >-
+    {{ helm_binary_path }} upgrade --install metallb metallb/metallb
+    --namespace {{ metallb_namespace }}
+    --create-namespace
+    --version {{ metallb_chart_version }}
+  register: metallb_helm
+  changed_when: "'Release' in metallb_helm.stdout"
+  run_once: true
+  tags:
+    - kubernetes-platform
+    - platform
+    - metallb
+
+- name: Wait for MetalLB controller
+  ansible.builtin.command: >-
+    kubectl -n {{ metallb_namespace }}
+    rollout status deployment/metallb-controller --timeout=180s
+  changed_when: false
+  run_once: true
+  tags:
+    - kubernetes-platform
+    - platform
+    - metallb
+
+- name: Wait for MetalLB CRDs
+  ansible.builtin.command: kubectl wait --for=condition=Established crd/ipaddresspools.metallb.io --timeout=120s
+  changed_when: false
+  run_once: true
+  tags:
+    - kubernetes-platform
+    - platform
+    - metallb
+
+- name: Apply MetalLB address pool
+  ansible.builtin.command: kubectl apply -f /tmp/kubernetes-platform/metallb-config.yaml
+  register: metallb_config_apply
+  changed_when: "'unchanged' not in metallb_config_apply.stdout"
+  run_once: true
+  tags:
+    - kubernetes-platform
+    - platform
+    - metallb
+
+- name: Install Traefik with pinned chart version
+  ansible.builtin.command: >-
+    {{ helm_binary_path }} upgrade --install traefik traefik/traefik
+    --namespace {{ traefik_namespace }}
+    --create-namespace
+    --version {{ traefik_chart_version }}
+    -f /tmp/kubernetes-platform/traefik-values.yaml
+  register: traefik_helm_pinned
+  changed_when: "'Release' in traefik_helm_pinned.stdout"
+  when: traefik_chart_version | length > 0
+  run_once: true
+  tags:
+    - kubernetes-platform
+    - platform
+    - traefik
+
+- name: Install Traefik with latest chart version
+  ansible.builtin.command: >-
+    {{ helm_binary_path }} upgrade --install traefik traefik/traefik
+    --namespace {{ traefik_namespace }}
+    --create-namespace
+    -f /tmp/kubernetes-platform/traefik-values.yaml
+  register: traefik_helm_latest
+  changed_when: "'Release' in traefik_helm_latest.stdout"
+  when: traefik_chart_version | length == 0
+  run_once: true
+  tags:
+    - kubernetes-platform
+    - platform
+    - traefik
+
+- name: Wait for Traefik
+  ansible.builtin.command: >-
+    kubectl -n {{ traefik_namespace }}
+    rollout status deployment/traefik --timeout=180s
+  changed_when: false
+  run_once: true
+  tags:
+    - kubernetes-platform
+    - platform
+    - traefik
+
+- name: Apply shared Gateway
+  ansible.builtin.command: kubectl apply -f /tmp/kubernetes-platform/gateway.yaml
+  register: gateway_apply
+  changed_when: "'unchanged' not in gateway_apply.stdout"
+  run_once: true
+  tags:
+    - kubernetes-platform
+    - platform
+    - gateway

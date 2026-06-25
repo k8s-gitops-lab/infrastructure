@@ -1,0 +1,9 @@
+- name: Copier le certificat racine Zscaler
+  ansible.builtin.copy:
+    src: files/zscaler_root_ca.pem
+    dest: /etc/pki/ca-trust/source/anchors/
+    mode: '0440'
+  notify: update ca trust
+  tags:
+    - zscaler
+    - ca
