@@ -189,31 +189,15 @@
     - platform
     - metallb
 
-- name: Install Traefik with pinned chart version
+- name: Install Traefik
   ansible.builtin.command: >-
     {{ helm_binary_path }} upgrade --install traefik traefik/traefik
     --namespace {{ traefik_namespace }}
     --create-namespace
     --version {{ traefik_chart_version }}
     -f /tmp/kubernetes-platform/traefik-values.yaml
-  register: traefik_helm_pinned
-  changed_when: "'Release' in traefik_helm_pinned.stdout"
-  when: traefik_chart_version | length > 0
-  run_once: true
-  tags:
-    - kubernetes-platform
-    - platform
-    - traefik
-
-- name: Install Traefik with latest chart version
-  ansible.builtin.command: >-
-    {{ helm_binary_path }} upgrade --install traefik traefik/traefik
-    --namespace {{ traefik_namespace }}
-    --create-namespace
-    -f /tmp/kubernetes-platform/traefik-values.yaml
-  register: traefik_helm_latest
-  changed_when: "'Release' in traefik_helm_latest.stdout"
-  when: traefik_chart_version | length == 0
+  register: traefik_helm
+  changed_when: "'Release' in traefik_helm.stdout"
   run_once: true
   tags:
     - kubernetes-platform

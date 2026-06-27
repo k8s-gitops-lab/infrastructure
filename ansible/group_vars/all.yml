@@ -16,6 +16,4 @@ metallb_chart_version: "0.14.9"
 metallb_addresses:
   - "192.168.33.100-192.168.33.120"
 
-# Laisser vide pour suivre la dernière version du chart Traefik.
-# Renseigner une version exacte une fois validée dans le POC.
-traefik_chart_version: ""
+traefik_chart_version: "41.0.0"

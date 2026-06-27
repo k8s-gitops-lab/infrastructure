@@ -17,7 +17,7 @@ metallb_addresses:
   - "192.168.33.100-192.168.33.120"
 
 traefik_namespace: traefik
-traefik_chart_version: ""
+traefik_chart_version: "41.0.0"
 traefik_dashboard_host: dashboard.localhost
 
 traefik_gateway_name: traefik-gateway
