@@ -63,6 +63,31 @@
     - control-plane
     - kubeconfig
 
+- name: Wait for Kubernetes API port
+  ansible.builtin.wait_for:
+    host: "{{ inventory_hostname }}"
+    port: "{{ kubeadm_bind_port }}"
+    state: started
+    timeout: 300
+  tags:
+    - kubernetes-master
+    - control-plane
+    - kubeadm
+    - kubeconfig
+
+- name: Wait for Kubernetes API readiness
+  ansible.builtin.command: kubectl cluster-info
+  register: kubernetes_api_readiness
+  changed_when: false
+  retries: 30
+  delay: 10
+  until: kubernetes_api_readiness.rc == 0
+  tags:
+    - kubernetes-master
+    - control-plane
+    - kubeadm
+    - kubeconfig
+
 - name: Read admin kubeconfig
   ansible.builtin.slurp:
     src: /etc/kubernetes/admin.conf
@@ -103,6 +128,10 @@
 
 - name: Install CNI plugin
   command: "kubectl apply -f https://github.com/flannel-io/flannel/releases/download/{{ flannel_version }}/kube-flannel.yml"
+  register: flannel_apply
+  retries: 12
+  delay: 10
+  until: flannel_apply.rc == 0
   tags:
     - kubernetes-master
     - cni
@@ -114,6 +143,9 @@
     '{"spec":{"template":{"spec":{"containers":[{"name":"kube-flannel","args":["--ip-masq","--kube-subnet-mgr","--iface={{ flannel_iface }}"]}]}}}}'
   register: flannel_iface_patch
   changed_when: "'no change' not in flannel_iface_patch.stdout"
+  retries: 12
+  delay: 10
+  until: flannel_iface_patch.rc == 0
   run_once: true
   tags:
     - kubernetes-master
@@ -122,6 +154,10 @@
 
 - name: Install metrics-server
   command: "kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/{{ metrics_server_version }}/components.yaml"
+  register: metrics_server_apply
+  retries: 12
+  delay: 10
+  until: metrics_server_apply.rc == 0
   run_once: true
   tags:
     - kubernetes-master
@@ -136,6 +172,9 @@
     '{"spec":{"template":{"spec":{"containers":[{"name":"metrics-server","args":["--cert-dir=/tmp","--secure-port=10250","--kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname","--kubelet-use-node-status-port","--metric-resolution=15s","--kubelet-insecure-tls"]}]}}}}'
   register: metrics_server_patch
   changed_when: "'no change' not in metrics_server_patch.stdout"
+  retries: 12
+  delay: 10
+  until: metrics_server_patch.rc == 0
   run_once: true
   tags:
     - kubernetes-master

@@ -17,6 +17,51 @@
 # Prérequis : les VMs sont démarrées et l'inventaire est à jour.
 # Ordre d'exécution : init master → join workers → déploiement platform.
 
+- hosts: kubernetes
+  become: true
+  tasks:
+    - name: Désactiver le swap pour la session actuelle
+      ansible.builtin.command: swapoff -a
+      when: ansible_facts['swaptotal_mb'] > 0
+      tags:
+        - cluster-start
+        - swap
+
+    - name: Désactiver le swap de manière permanente (fstab)
+      ansible.builtin.replace:
+        path: /etc/fstab
+        regexp: '^([^#].*\sswap\s+.*)$'
+        replace: '# \1'
+      tags:
+        - cluster-start
+        - swap
+
+    - name: Configure Vagrant private IPv4 connection
+      ansible.builtin.command: >-
+        nmcli connection modify {{ flannel_iface }}
+        ipv4.addresses {{ inventory_hostname }}/24
+        ipv4.method manual
+        connection.autoconnect yes
+      tags:
+        - cluster-start
+        - network
+
+    - name: Bring up Vagrant private IPv4 connection
+      ansible.builtin.command: "nmcli connection up {{ flannel_iface }}"
+      tags:
+        - cluster-start
+        - network
+
+    - name: Wait for Vagrant private IPv4 address
+      ansible.builtin.wait_for:
+        host: "{{ inventory_hostname }}"
+        port: 22
+        state: started
+        timeout: 60
+      tags:
+        - cluster-start
+        - network
+
 - hosts: kubernetes-master
   roles:
     - role: kubernetes-master

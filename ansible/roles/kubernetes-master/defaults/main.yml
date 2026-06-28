@@ -2,3 +2,5 @@
 force_cluster_reset: false
 kubeconfig_local_update: true
 kubeconfig_local_path: "{{ lookup('env', 'HOME') }}/.kube/config"
+kubeadm_control_plane_timeout: "5m0s"
+kubeadm_api_call_timeout: "2m0s"

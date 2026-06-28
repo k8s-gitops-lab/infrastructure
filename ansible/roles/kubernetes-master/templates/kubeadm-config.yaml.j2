@@ -5,8 +5,6 @@ kubernetesVersion: v{{ kubernetes_version }}
 networking:
   podSubnet: {{ pod_subnet }}
   serviceSubnet: {{ service_subnet }}
-nodeRegistration:
-  name: {{ node_name }}
 ---
 kind: KubeletConfiguration
 apiVersion: kubelet.config.k8s.io/v1beta1
@@ -17,3 +15,9 @@ kind: InitConfiguration
 localAPIEndpoint:
   advertiseAddress: "{{ inventory_hostname }}"
   bindPort: {{ kubeadm_bind_port }}
+nodeRegistration:
+  name: {{ node_name }}
+  criSocket: unix:///run/containerd/containerd.sock
+timeouts:
+  controlPlaneComponentHealthCheck: {{ kubeadm_control_plane_timeout }}
+  kubernetesAPICall: {{ kubeadm_api_call_timeout }}
