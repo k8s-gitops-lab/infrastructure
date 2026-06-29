@@ -103,6 +103,21 @@
       delegate_to: "{{ groups['kubernetes-master'][0] }}"
       run_once: true
 
+    - name: Create containerd conf.d directory
+      ansible.builtin.file:
+        path: /etc/containerd/conf.d
+        state: directory
+        mode: '0755'
+
+    - name: Enable certs.d in containerd via conf.d override
+      ansible.builtin.copy:
+        dest: /etc/containerd/conf.d/registry-certs.toml
+        mode: '0644'
+        content: |
+          [plugins.'io.containerd.cri.v1.images'.registry]
+            config_path = '/etc/containerd/certs.d'
+      notify: restart containerd
+
     - name: Create containerd certs.d directory for registry
       ansible.builtin.file:
         path: "{{ _certs_dir }}"
