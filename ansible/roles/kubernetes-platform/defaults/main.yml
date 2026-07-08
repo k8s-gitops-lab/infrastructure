@@ -1,7 +1,7 @@
 ---
 # gateway_api_version, metallb_chart_version, metallb_addresses et
 # traefik_chart_version sont declares dans group_vars/all.yml (source de
-# verite synchronisee avec control-plane/platform.yml) : ne pas les
+# verite synchronisee avec cockpit/platform.yml) : ne pas les
 # redeclarer ici, group_vars a de toute facon une precedence plus haute que
 # les defaults de role et masquerait silencieusement toute modification
 # faite ici.

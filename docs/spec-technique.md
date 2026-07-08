@@ -41,4 +41,4 @@ de chemin indépendant de Packer.
 ## Frontière de responsabilité
 
 Ce dépôt prépare le cluster et les add-ons réseau bas niveau. Les composants
-applicatifs et GitOps sont déclarés dans `platform-cicd`.
+applicatifs et GitOps sont déclarés dans `platform-bootstrap`.

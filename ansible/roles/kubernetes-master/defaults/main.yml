@@ -1,8 +1,8 @@
 ---
 force_cluster_reset: false
 kubeconfig_local_update: true
-# Remplace le kubeconfig par defaut de l'operateur (requis : control-plane et
-# platform-cicd invoquent kubectl sans --kubeconfig explicite). La tache qui
+# Remplace le kubeconfig par defaut de l'operateur (requis : cockpit et
+# platform-bootstrap invoquent kubectl sans --kubeconfig explicite). La tache qui
 # ecrit ce fichier utilise `backup: true`, donc l'ancien contenu (autres
 # contextes/clusters eventuels) est sauvegarde a cote avant d'etre remplace.
 kubeconfig_local_path: "{{ lookup('env', 'HOME') }}/.kube/config"

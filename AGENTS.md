@@ -1,12 +1,12 @@
-# AGENTS.md — infrastructure
+# AGENTS.md — infra-iac
 
 ## Rôle du dépôt
 
-`infrastructure` fournit le socle Kubernetes local du POC via Vagrant, Ansible et
+`infra-iac` fournit le socle Kubernetes local du POC via Vagrant, Ansible et
 Packer (provisioning bas niveau : runtime, kubeadm, réseau, add-ons). Il ne
 déploie pas ArgoCD, GitLab ni les applications — ce bootstrap applicatif vit
-dans `platform-cicd` (rôle Ansible `platform_bootstrap`, cf.
-`platform-cicd/AGENTS.md`).
+dans `platform-bootstrap` (rôle Ansible `platform_bootstrap`, cf.
+`platform-bootstrap/AGENTS.md`).
 
 ## Structure
 
@@ -28,8 +28,8 @@ packer/        Builds d'images VM reproductibles (k8s-master, k8s-worker)
 ## Versions
 
 Les versions des composants sont dans `ansible/group_vars/all.yml`. Elles
-doivent rester synchronisées avec `platform.yml` du dépôt `control-plane` —
-c'est `control-plane` qui fait autorité ; modifier `all.yml` seul est une
+doivent rester synchronisées avec `platform.yml` du dépôt `cockpit` —
+c'est `cockpit` qui fait autorité ; modifier `all.yml` seul est une
 dérive.
 
 ## Commandes principales
@@ -63,8 +63,8 @@ playbook existant.
 ## Ce qu'il ne faut pas faire
 
 - Ne pas ajouter de logique de déploiement ArgoCD/GitLab/Flux dans ce dépôt :
-  elle vit dans le rôle Ansible `platform_bootstrap` de `platform-cicd`.
+  elle vit dans le rôle Ansible `platform_bootstrap` de `platform-bootstrap`.
 - Ne pas modifier `group_vars/all.yml` sans mettre à jour `platform.yml` dans
-  `control-plane`.
+  `cockpit`.
 - Ne pas committer les fichiers générés dans `packer/output/` ni les fichiers
   d'état Vagrant dans `vagrant/.vagrant/`.

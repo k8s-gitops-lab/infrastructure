@@ -2,12 +2,12 @@
 
 ## Intention du projet
 
-`infrastructure` fournit le socle Kubernetes local du POC. Il prépare un
-cluster capable d'héberger `platform-cicd`, mais ne déploie pas GitLab,
+`infra-iac` fournit le socle Kubernetes local du POC. Il prépare un
+cluster capable d'héberger `platform-bootstrap`, mais ne déploie pas GitLab,
 ArgoCD ni les applications.
 
 La vision globale de la chaîne CI/CD est dans
-`../../control-plane/docs/prd.md`.
+`../../cockpit/docs/prd.md`.
 
 ## Produit attendu
 

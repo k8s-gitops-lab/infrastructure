@@ -1,4 +1,4 @@
-# infrastructure
+# infra-iac
 
 Socle Kubernetes local du POC : Vagrant, Ansible, kubeadm/containerd, MetalLB, Traefik, Gateway API et Gateway partagee.
 
@@ -22,15 +22,15 @@ suffit.
 Une fois le cluster provisionne, `make snapshot-cluster` prend un snapshot
 VirtualBox de `master-01`/`worker-01` (nom `SNAPSHOT_NAME`, defaut
 `cluster-ready`) ; `make restore-cluster` restaure cet etat. Utile pour
-rejouer uniquement le bootstrap CI/CD (`platform-cicd`) sans repasser par
-Packer/Vagrant/kubeadm — voir `control-plane/README.md` (`make
+rejouer uniquement le bootstrap CI/CD (`platform-bootstrap`) sans repasser par
+Packer/Vagrant/kubeadm — voir `cockpit/README.md` (`make
 platform-from-snapshot`).
 
 Le cluster expose Traefik via MetalLB. Par defaut, le pool est configure dans `ansible/group_vars/all.yml` avec `192.168.33.100-192.168.33.120`.
 
 Le role Ansible installe aussi `local-path-provisioner` et definit la StorageClass `local-path` comme classe par defaut pour les PVC locaux du POC.
 
-Ce repo ne deploie pas GitLab, ArgoCD ni les applications. Ces composants vivent dans `platform-cicd`.
+Ce repo ne deploie pas GitLab, ArgoCD ni les applications. Ces composants vivent dans `platform-bootstrap`.
 
 ## Principe : build-time vs runtime
 
