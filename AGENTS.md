@@ -41,7 +41,7 @@ make snapshot-cluster    # Snapshot VirtualBox de master-01/worker-01 (SNAPSHOT_
 make restore-cluster     # Restaure master-01/worker-01 depuis un snapshot VirtualBox
 make down                # Éteindre les VMs sans les détruire
 make destroy             # Détruire les VMs
-cd packer && make build  # Construire les images VM Packer
+make -C packer build     # Construire les images VM Packer
 ```
 
 ## Provisioning des images Packer
