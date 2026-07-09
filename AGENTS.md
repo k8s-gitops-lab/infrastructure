@@ -68,3 +68,10 @@ playbook existant.
   `cockpit`.
 - Ne pas committer les fichiers générés dans `packer/output/` ni les fichiers
   d'état Vagrant dans `vagrant/.vagrant/`.
+
+## Gouvernance du développement
+
+Ce repo fait partie de la plateforme poc-devops : toute contribution suit
+les trois axes de maîtrise (produit, code, architecture) définis dans
+`cockpit/AGENTS.md`, section « Gouvernance du développement » — PRD et
+backlog dans `cockpit/docs/`.
